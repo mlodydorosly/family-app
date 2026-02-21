@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useChores } from '../context/ChoresContext';
 import { Card } from '../components/Card';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Home: React.FC = () => {
+    const navigate = useNavigate();
     const { currentUser, profiles } = useAuth();
     const { chores, completeChore, toggleChecklistItem, isChoreDoneToday } = useChores();
     const [animatingId, setAnimatingId] = useState<string | null>(null);
@@ -79,11 +81,32 @@ export const Home: React.FC = () => {
 
             {/* Chores Section */}
             <section>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h2 className="text-xl font-bold">Do zrobienia dzisiaj</h2>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>
-                        {completedChores.length} / {chores.length}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>
+                            {completedChores.length} / {chores.length}
+                        </span>
+                        <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => navigate('/add')}
+                            style={{
+                                width: '36px', height: '36px',
+                                borderRadius: '50%',
+                                backgroundColor: 'var(--color-primary)',
+                                color: 'white',
+                                border: 'none',
+                                fontSize: '1.4rem',
+                                lineHeight: 1,
+                                cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: 'var(--shadow-sm)'
+                            }}
+                            title="Dodaj nowy obowiązek"
+                        >
+                            +
+                        </motion.button>
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
