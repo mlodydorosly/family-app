@@ -1,0 +1,12 @@
+.app-card {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--spacing-md);
+    overflow: hidden;
+}
+
+.app-card.no-padding {
+    padding: 0;
+}

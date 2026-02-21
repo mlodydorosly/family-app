@@ -1,0 +1,67 @@
+.app-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    width: 100%;
+}
+
+.app-input-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-main);
+}
+
+.app-input-wrapper {
+    display: flex;
+    align-items: center;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0 var(--spacing-md);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.app-input-wrapper:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.app-input-error {
+    border-color: var(--color-danger);
+}
+
+.app-input-error:focus-within {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.app-input-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    margin-right: var(--spacing-sm);
+    width: 20px;
+    height: 20px;
+}
+
+.app-input {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: var(--spacing-md) 0;
+    font-size: 1rem;
+    color: var(--color-text-main);
+    outline: none;
+}
+
+.app-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.app-input-error-text {
+    font-size: 0.75rem;
+    color: var(--color-danger);
+    margin-top: 2px;
+}
