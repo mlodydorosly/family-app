@@ -5,7 +5,7 @@ import { Card } from '../components/Card';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Home: React.FC = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, profiles } = useAuth();
     const { chores, completeChore, toggleChecklistItem, isChoreDoneToday } = useChores();
     const [animatingId, setAnimatingId] = useState<string | null>(null);
 
@@ -142,9 +142,16 @@ export const Home: React.FC = () => {
                                                         {chore.title}
                                                         {chore.description && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>{chore.description}</span>}
                                                     </h4>
-                                                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '2px' }}>
+                                                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '2px', flexWrap: 'wrap' }}>
                                                         <span>{chore.recurrence === 'daily' ? 'Codziennie' : chore.recurrence === 'weekly' ? 'Co tydzień' : chore.recurrence === 'monthly' ? 'Co miesiąc' : 'Jednorazowe'}</span>
                                                         {checklistProgress && <span style={{ backgroundColor: 'var(--color-background)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{checklistProgress} kroków</span>}
+                                                        {chore.assignedTo ? (
+                                                            <span style={{ backgroundColor: 'var(--color-background)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                                                                {profiles.find(p => p.id === chore.assignedTo)?.avatarUrl} {profiles.find(p => p.id === chore.assignedTo)?.name}
+                                                            </span>
+                                                        ) : (
+                                                            <span style={{ backgroundColor: 'var(--color-background)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>🏠 Wspólne</span>
+                                                        )}
                                                     </p>
                                                 </div>
                                             </div>

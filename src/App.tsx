@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { EventsProvider } from './context/EventsContext';
 import { ChoresProvider } from './context/ChoresContext';
 import { ShopProvider } from './context/ShopContext';
+import { PinLock } from './pages/PinLock';
 import { BottomNav } from './components/BottomNav';
 import { Home } from './pages/Home';
 import { Events } from './pages/Events';
@@ -38,7 +39,7 @@ const AppRoutes = () => {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       </Routes>
 
-      {/* Pokaż nawigację tylko, gdy zarejestrowany */}
+      {/* Pokaż nawigację tylko, gdy zalogowany */}
       {currentUser && <BottomNav />}
     </>
   );
@@ -46,19 +47,21 @@ const AppRoutes = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ChoresProvider>
-        <EventsProvider>
-          <ShopProvider>
-            <Router>
-              <div className="app-layout">
-                <AppRoutes />
-              </div>
-            </Router>
-          </ShopProvider>
-        </EventsProvider>
-      </ChoresProvider>
-    </AuthProvider>
+    <PinLock>
+      <AuthProvider>
+        <ChoresProvider>
+          <EventsProvider>
+            <ShopProvider>
+              <Router>
+                <div className="app-layout">
+                  <AppRoutes />
+                </div>
+              </Router>
+            </ShopProvider>
+          </EventsProvider>
+        </ChoresProvider>
+      </AuthProvider>
+    </PinLock>
   );
 };
 
