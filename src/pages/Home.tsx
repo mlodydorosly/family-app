@@ -2,247 +2,195 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useChores } from '../context/ChoresContext';
-import { Card } from '../components/Card';
+import { useNotify } from '../context/NotificationContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Home: React.FC = () => {
     const navigate = useNavigate();
     const { currentUser, profiles } = useAuth();
-    const { chores, completeChore, toggleChecklistItem, isChoreDoneToday } = useChores();
+    const { notify } = useNotify();
+    const { chores, completeChore, deleteChore, isChoreDoneToday } = useChores();
     const [animatingId, setAnimatingId] = useState<string | null>(null);
+    const [sortBy, setSortBy] = useState<'date' | 'points'>('date');
 
-    const pendingChores = chores.filter(c => !isChoreDoneToday(c.id));
-    const completedChores = chores.filter(c => isChoreDoneToday(c.id));
+    const sortedChores = [...chores].sort((a, b) => {
+        if (sortBy === 'points') return b.points - a.points;
+        return a.title.localeCompare(b.title);
+    });
+
+    const pendingChores = sortedChores.filter(c => !isChoreDoneToday(c.id));
+    const completedChores = sortedChores.filter(c => isChoreDoneToday(c.id));
 
     const handleComplete = (id: string) => {
         if (!currentUser) return;
         setAnimatingId(id);
+        const chore = chores.find(c => c.id === id);
         setTimeout(() => {
             completeChore(id, currentUser.id);
             setAnimatingId(null);
+            notify(`Zadanie "${chore?.title}" ukończone! +${chore?.points} 🪙`, 'success');
         }, 600);
     };
 
-    const getChecklistProgress = (checklist: any[]) => {
-        if (!checklist || checklist.length === 0) return null;
-        const done = checklist.filter(c => c.isDone).length;
-        return `${done}/${checklist.length}`;
+    const handleDelete = (id: string) => {
+        if (window.confirm('Czy na pewno chcesz usunąć to zadanie?')) {
+            deleteChore(id);
+        }
     };
 
     return (
         <div className="page-container animate-slide-up">
-            <header className="mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                <div>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Przegląd dnia
-                    </p>
-                    <h1 className="text-3xl font-black" style={{ letterSpacing: '-0.5px' }}>
-                        Hej, {currentUser?.name}! 👋
-                    </h1>
-                </div>
-                <div style={{
-                    width: '50px', height: '50px',
-                    borderRadius: '50%',
-                    backgroundColor: `${currentUser?.themeColor}20`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.5rem',
-                    boxShadow: 'var(--shadow-sm)'
-                }}>
-                    {currentUser?.avatarUrl}
+            <header className="mb-8" style={{ marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h1 className="text-3xl font-black" style={{ letterSpacing: '-1.5px' }}>Zadania</h1>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', fontWeight: 500 }}>Dzisiaj masz {pendingChores.length} do zrobienia</p>
+                    </div>
+                    <div 
+                        onClick={() => navigate('/profile')}
+                        style={{
+                            width: '56px', height: '56px',
+                            borderRadius: '20px',
+                            backgroundColor: `${currentUser?.themeColor}20`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '1.8rem',
+                            cursor: 'pointer',
+                            boxShadow: 'var(--shadow-sm)',
+                            border: `2px solid ${currentUser?.themeColor}30`
+                        }}
+                    >
+                        {currentUser?.avatarUrl}
+                    </div>
                 </div>
             </header>
 
-            {/* Quick Stats Banner */}
-            <section style={{ marginBottom: '2rem' }}>
-                <Card style={{
-                    background: `linear-gradient(135deg, ${currentUser?.themeColor} 0%, var(--color-primary-hover) 100%)`,
-                    color: 'white',
-                    border: 'none',
-                    boxShadow: 'var(--shadow-md)'
-                }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <p style={{ fontSize: '0.875rem', opacity: 0.9, fontWeight: 500 }}>Twoje Monety</p>
-                            <motion.p
-                                key={currentUser?.points}
-                                initial={{ scale: 1.2, color: '#fef08a' }}
-                                animate={{ scale: 1, color: '#ffffff' }}
-                                style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1, marginTop: '0.25rem' }}
-                            >
-                                {currentUser?.points}
-                            </motion.p>
-                        </div>
-                        <div style={{ fontSize: '3rem', opacity: 0.9 }}>
-                            🪙
-                        </div>
-                    </div>
-                </Card>
-            </section>
+            {/* Sorting */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
+                <button 
+                    onClick={() => setSortBy('date')}
+                    style={{
+                        padding: '0.6rem 1.2rem',
+                        borderRadius: '16px',
+                        border: 'none',
+                        background: sortBy === 'date' ? 'var(--color-primary)' : 'var(--color-surface)',
+                        color: sortBy === 'date' ? 'white' : 'var(--color-text-muted)',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        whiteSpace: 'nowrap',
+                        boxShadow: 'var(--shadow-sm)',
+                        cursor: 'pointer'
+                    }}
+                >
+                    📅 Wszystkie
+                </button>
+                <button 
+                    onClick={() => setSortBy('points')}
+                    style={{
+                        padding: '0.6rem 1.2rem',
+                        borderRadius: '16px',
+                        border: 'none',
+                        background: sortBy === 'points' ? 'var(--color-primary)' : 'var(--color-surface)',
+                        color: sortBy === 'points' ? 'white' : 'var(--color-text-muted)',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        whiteSpace: 'nowrap',
+                        boxShadow: 'var(--shadow-sm)',
+                        cursor: 'pointer'
+                    }}
+                >
+                    🪙 Najwyżej punktowane
+                </button>
+            </div>
 
-            {/* Chores Section */}
-            <section>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h2 className="text-xl font-bold">Do zrobienia dzisiaj</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>
-                            {completedChores.length} / {chores.length}
-                        </span>
-                        <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => navigate('/add')}
-                            style={{
-                                width: '36px', height: '36px',
-                                borderRadius: '50%',
-                                backgroundColor: 'var(--color-primary)',
-                                color: 'white',
-                                border: 'none',
-                                fontSize: '1.4rem',
-                                lineHeight: 1,
-                                cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: 'var(--shadow-sm)'
-                            }}
-                            title="Dodaj nowy obowiązek"
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <AnimatePresence>
+                    {pendingChores.length === 0 ? (
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                            style={{ padding: '3rem 2rem', textAlign: 'center', background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '2px dashed var(--color-border)' }}
                         >
-                            +
-                        </motion.button>
-                    </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <AnimatePresence>
-                        {pendingChores.length === 0 ? (
+                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✨</div>
+                            <h3 style={{ fontWeight: 800, fontSize: '1.25rem' }}>Wszystko zrobione!</h3>
+                        </motion.div>
+                    ) : (
+                        pendingChores.map(chore => (
                             <motion.div
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                style={{ padding: '2rem', textAlign: 'center', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '2px dashed var(--color-border)' }}
+                                key={chore.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, x: -50 }}
+                                className="card-modern"
+                                style={{ padding: '1.25rem' }}
                             >
-                                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✨</div>
-                                <h3 style={{ fontWeight: 700 }}>Wszystko zrobione!</h3>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Świetna robota! Odpocznij sobie.</p>
-                            </motion.div>
-                        ) : (
-                            pendingChores.map(chore => {
-                                const checklistProgress = getChecklistProgress(chore.checklist);
-                                const isAllChecked = chore.checklist && chore.checklist.length > 0 && chore.checklist.every(c => c.isDone);
-
-                                return (
-                                    <motion.div
-                                        key={chore.id}
-                                        layout
-                                        initial={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -100, transition: { duration: 0.3 } }}
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                    <button
+                                        onClick={() => handleComplete(chore.id)}
+                                        disabled={animatingId === chore.id}
                                         style={{
-                                            backgroundColor: 'var(--color-surface)',
-                                            borderRadius: '16px',
-                                            padding: '1rem',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '0.75rem',
-                                            boxShadow: 'var(--shadow-sm)'
+                                            width: '32px', height: '32px',
+                                            borderRadius: '12px',
+                                            border: '2px solid var(--color-border)',
+                                            backgroundColor: animatingId === chore.id ? 'var(--color-success)' : 'transparent',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            marginTop: '4px'
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <button
-                                                    onClick={() => handleComplete(chore.id)}
-                                                    disabled={animatingId === chore.id || (chore.checklist && chore.checklist.length > 0 && !isAllChecked)}
-                                                    style={{
-                                                        width: '28px', height: '28px',
-                                                        borderRadius: '50%',
-                                                        border: '2px solid var(--color-border)',
-                                                        backgroundColor: animatingId === chore.id ? 'var(--color-success)' : 'transparent',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        color: 'white',
-                                                        cursor: (chore.checklist && chore.checklist.length > 0 && !isAllChecked) ? 'not-allowed' : 'pointer',
-                                                        opacity: (chore.checklist && chore.checklist.length > 0 && !isAllChecked) ? 0.3 : 1,
-                                                        transition: 'all 0.2s ease'
-                                                    }}
-                                                >
-                                                    {animatingId === chore.id && '✓'}
-                                                </button>
-                                                <div>
-                                                    <h4 style={{ fontWeight: 600, fontSize: '1.05rem' }}>
-                                                        {chore.title}
-                                                        {chore.description && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>{chore.description}</span>}
-                                                    </h4>
-                                                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '2px', flexWrap: 'wrap' }}>
-                                                        <span>{chore.recurrence === 'daily' ? 'Codziennie' : chore.recurrence === 'weekly' ? 'Co tydzień' : chore.recurrence === 'monthly' ? 'Co miesiąc' : 'Jednorazowe'}</span>
-                                                        {checklistProgress && <span style={{ backgroundColor: 'var(--color-background)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{checklistProgress} kroków</span>}
-                                                        {chore.assignedTo ? (
-                                                            <span style={{ backgroundColor: 'var(--color-background)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
-                                                                {profiles.find(p => p.id === chore.assignedTo)?.avatarUrl} {profiles.find(p => p.id === chore.assignedTo)?.name}
-                                                            </span>
-                                                        ) : (
-                                                            <span style={{ backgroundColor: 'var(--color-background)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>🏠 Wspólne</span>
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div style={{
-                                                backgroundColor: 'var(--color-primary-light)',
-                                                color: 'var(--color-primary)',
-                                                padding: '0.25rem 0.5rem',
-                                                borderRadius: '8px',
-                                                fontWeight: 700,
-                                                fontSize: '0.85rem'
-                                            }}>
+                                        {animatingId === chore.id && '✓'}
+                                    </button>
+                                    
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>{chore.title}</h4>
+                                            <div style={{ background: 'var(--pastel-blue)', color: 'var(--color-primary-hover)', padding: '0.25rem 0.6rem', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 900 }}>
                                                 +{chore.points} 🪙
                                             </div>
                                         </div>
-
-                                        {/* Checklist renderer */}
-                                        {chore.checklist && chore.checklist.length > 0 && (
-                                            <div style={{ marginLeft: '45px', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
-                                                {chore.checklist.map(item => (
-                                                    <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: item.isDone ? 'var(--color-text-muted)' : 'var(--color-text-main)', cursor: 'pointer', textDecoration: item.isDone ? 'line-through' : 'none' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={item.isDone}
-                                                            onChange={() => toggleChecklistItem(chore.id, item.id)}
-                                                            style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }}
-                                                        />
-                                                        {item.text}
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                )
-                            })
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Ukończone dzisiaj */}
-                {completedChores.length > 0 && (
-                    <div style={{ marginTop: '2rem' }}>
-                        <h3 className="text-sm font-bold text-color-text-muted mb-3" style={{ textTransform: 'uppercase' }}>Wykonane dzisiaj</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {completedChores.map(chore => {
-                                return (
-                                    <div key={chore.id} style={{
-                                        display: 'flex', alignItems: 'center', gap: '1rem',
-                                        opacity: 0.6,
-                                        padding: '0.75rem 1rem',
-                                        backgroundColor: 'var(--color-surface)',
-                                        borderRadius: '12px',
-                                        justifyContent: 'space-between'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--color-success)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>✓</div>
-                                            <span style={{ textDecoration: 'line-through' }}>{chore.title}</span>
+                                        <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                            {chore.description || 'Brak opisu'}
+                                        </p>
+                                        
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', background: 'var(--color-background)', padding: '4px 8px', borderRadius: '8px' }}>
+                                                🔁 {chore.recurrence === 'daily' ? 'Codziennie' : chore.recurrence === 'weekly' ? 'Co tydzień' : 'Raz'}
+                                            </span>
+                                            {chore.assignedTo && (
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', background: 'var(--color-background)', padding: '4px 8px', borderRadius: '8px' }}>
+                                                    👤 {profiles.find(p => p.id === chore.assignedTo)?.name}
+                                                </span>
+                                            )}
                                         </div>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                                            Zaliczone przez Ciebie
-                                        </span>
                                     </div>
-                                )
-                            })}
-                        </div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <button onClick={() => navigate(`/edit/${chore.id}`)} style={{ border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer', opacity: 0.5 }}>✏️</button>
+                                        <button onClick={() => handleDelete(chore.id)} style={{ border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer', opacity: 0.5 }}>🗑️</button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Completed */}
+            {completedChores.length > 0 && (
+                <div style={{ marginTop: '3rem' }}>
+                    <h3 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '1px' }}>Wykonane dziś</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', opacity: 0.6 }}>
+                        {completedChores.map(chore => (
+                            <div key={chore.id} className="card-modern" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span style={{ textDecoration: 'line-through', fontWeight: 600 }}>{chore.title}</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>+{chore.points} 🪙</span>
+                            </div>
+                        ))}
                     </div>
-                )}
-            </section>
+                </div>
+            )}
+
+            <button className="fab" onClick={() => navigate('/add')}>+</button>
         </div>
     );
 };

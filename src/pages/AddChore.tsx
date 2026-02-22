@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useChores, type RecurrenceType, type ChecklistItem } from '../context/ChoresContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotify } from '../context/NotificationContext';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -9,8 +10,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export const AddChore: React.FC = () => {
     const navigate = useNavigate();
-    const { addChore } = useChores();
+    const { id } = useParams<{ id: string }>();
+    const { addChore, updateChore, chores } = useChores();
     const { profiles } = useAuth();
+    const { notify } = useNotify();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -20,6 +23,20 @@ export const AddChore: React.FC = () => {
 
     const [checklistItemText, setChecklistItemText] = useState('');
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+
+    useEffect(() => {
+        if (id) {
+            const choreToEdit = chores.find(c => c.id === id);
+            if (choreToEdit) {
+                setTitle(choreToEdit.title);
+                setDescription(choreToEdit.description || '');
+                setPoints(choreToEdit.points);
+                setRecurrence(choreToEdit.recurrence);
+                setAssignedTo(choreToEdit.assignedTo || '');
+                setChecklist(choreToEdit.checklist);
+            }
+        }
+    }, [id, chores]);
 
     const handleAddChecklist = (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,14 +54,27 @@ export const AddChore: React.FC = () => {
         e.preventDefault();
         if (!title.trim()) return;
 
-        addChore({
-            title,
-            description,
-            points,
-            recurrence,
-            assignedTo: assignedTo || undefined,
-            checklist,
-        });
+        if (id) {
+            updateChore(id, {
+                title,
+                description,
+                points,
+                recurrence,
+                assignedTo: assignedTo || undefined,
+                checklist,
+            });
+            notify(`Zadanie "${title}" zaktualizowane!`, 'success');
+        } else {
+            addChore({
+                title,
+                description,
+                points,
+                recurrence,
+                assignedTo: assignedTo || undefined,
+                checklist,
+            });
+            notify(`Nowe zadanie "${title}" dodane!`, 'success');
+        }
 
         navigate('/');
     };
@@ -58,7 +88,7 @@ export const AddChore: React.FC = () => {
                 >
                     ←
                 </button>
-                <h1 className="text-2xl font-black" style={{ letterSpacing: '-0.5px' }}>Nowy obowiązek</h1>
+                <h1 className="text-2xl font-black" style={{ letterSpacing: '-0.5px' }}>{id ? 'Edytuj obowiązek' : 'Nowy obowiązek'}</h1>
             </header>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

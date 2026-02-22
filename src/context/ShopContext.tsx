@@ -8,11 +8,20 @@ export interface Reward {
     icon: string;
 }
 
+export interface PurchaseRecord {
+    id: string;
+    rewardTitle: string;
+    purchasedBy: string; // profile id
+    date: string; // ISO
+    cost: number;
+}
+
 interface ShopContextType {
     rewards: Reward[];
+    purchases: PurchaseRecord[];
     addReward: (reward: Omit<Reward, 'id'>) => void;
     deleteReward: (id: string) => void;
-    purchaseReward: (id: string) => boolean; // Returns true if success (enough points)
+    purchaseReward: (id: string) => boolean;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -25,24 +34,27 @@ const INITIAL_REWARDS: Reward[] = [
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [rewards, setRewards] = useState<Reward[]>([]);
+    const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
     const [initialized, setInitialized] = useState(false);
     const { currentUser, addPoints } = useAuth();
 
     useEffect(() => {
-        const stored = localStorage.getItem('family_app_rewards');
-        if (stored) {
-            setRewards(JSON.parse(stored));
-        } else {
-            setRewards(INITIAL_REWARDS);
-        }
+        const storedRewards = localStorage.getItem('family_app_rewards');
+        if (storedRewards) setRewards(JSON.parse(storedRewards));
+        else setRewards(INITIAL_REWARDS);
+
+        const storedPurchases = localStorage.getItem('family_app_purchases');
+        if (storedPurchases) setPurchases(JSON.parse(storedPurchases));
+
         setInitialized(true);
     }, []);
 
     useEffect(() => {
         if (initialized) {
             localStorage.setItem('family_app_rewards', JSON.stringify(rewards));
+            localStorage.setItem('family_app_purchases', JSON.stringify(purchases));
         }
-    }, [rewards, initialized]);
+    }, [rewards, purchases, initialized]);
 
     const addReward = (rewardData: Omit<Reward, 'id'>) => {
         setRewards(prev => [...prev, { ...rewardData, id: crypto.randomUUID() }]);
@@ -59,16 +71,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!reward) return false;
 
         if (currentUser.points >= reward.cost) {
-            // Deduct points
             addPoints(-reward.cost);
+            
+            const newPurchase: PurchaseRecord = {
+                id: crypto.randomUUID(),
+                rewardTitle: reward.title,
+                purchasedBy: currentUser.id,
+                date: new Date().toLocaleDateString('pl-PL'),
+                cost: reward.cost
+            };
+            
+            setPurchases(prev => [newPurchase, ...prev]);
             return true;
         }
 
-        return false; // Not enough points
+        return false;
     };
 
     return (
-        <ShopContext.Provider value={{ rewards, addReward, deleteReward, purchaseReward }}>
+        <ShopContext.Provider value={{ rewards, purchases, addReward, deleteReward, purchaseReward }}>
             {children}
         </ShopContext.Provider>
     );

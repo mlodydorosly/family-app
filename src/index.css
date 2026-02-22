@@ -49,16 +49,97 @@
   --transition-bounce: 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #0f172a;
-    --color-surface: #1e293b;
-    --color-text-main: #f8fafc;
-    --color-text-muted: #94a3b8;
-    --color-border: #334155;
-    --color-primary-light: rgba(99, 102, 241, 0.2);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  }
+:root {
+  /* Nowa Pastelowa Paleta */
+  --color-primary: #7dd3fc; /* Jasny niebieski */
+  --color-primary-hover: #38bdf8;
+  --color-primary-light: #f0f9ff;
+  
+  --color-secondary: #f472b6; /* Pastelowy róż */
+  --color-success: #34d399;   /* Pastelowa mięta */
+  --color-warning: #fbbf24;   /* Pastelowy pomarańcz */
+  --color-danger: #f87171;
+  
+  --color-background: #f8fafc; /* Bardzo jasny szary/niebieski */
+  --color-surface: #ffffff;
+  
+  --color-text-main: #1e293b;
+  --color-text-muted: #64748b;
+  --color-border: #f1f5f9;
+
+  /* Pastelowe akcenty dla kategorii */
+  --pastel-blue: #e0f2fe;
+  --pastel-pink: #fce7f3;
+  --pastel-mint: #ecfdf5;
+  --pastel-yellow: #fef3c7;
+  --pastel-purple: #f3e8ff;
+
+  /* Typography */
+  --font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
+  /* Shadows - softer */
+  --shadow-sm: 0 2px 4px rgba(148, 163, 184, 0.05);
+  --shadow-md: 0 10px 15px -3px rgba(148, 163, 184, 0.1), 0 4px 6px -4px rgba(148, 163, 184, 0.1);
+  --shadow-float: 0 20px 25px -5px rgba(148, 163, 184, 0.1), 0 8px 10px -6px rgba(148, 163, 184, 0.1);
+
+  --radius-md: 20px;
+  --radius-lg: 32px;
+}
+
+[data-theme='dark'] {
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-text-main: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
+  --color-primary-light: rgba(125, 211, 252, 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-background);
+  color: var(--color-text-main);
+  letter-spacing: -0.01em;
+}
+
+.page-container {
+  padding: 1.5rem;
+  padding-bottom: 7rem;
+}
+
+/* Nowoczesne Karty */
+.card-modern {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-modern:active {
+  transform: scale(0.98);
+}
+
+/* Floating Action Button */
+.fab {
+  position: fixed;
+  bottom: 6rem;
+  right: 1.5rem;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: var(--shadow-float);
+  border: none;
+  cursor: pointer;
+  z-index: 100;
 }
 
 * {

@@ -28,6 +28,7 @@ export interface Chore {
 interface ChoresContextType {
     chores: Chore[];
     addChore: (chore: Omit<Chore, 'id' | 'history'>) => void;
+    updateChore: (id: string, chore: Partial<Omit<Chore, 'id' | 'history'>>) => void;
     deleteChore: (id: string) => void;
     completeChore: (id: string, profileId: string) => void;
     toggleChecklistItem: (choreId: string, itemId: string) => void;
@@ -86,6 +87,10 @@ export const ChoresProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setChores(prev => [...prev, { ...choreData, id: crypto.randomUUID(), history: [] }]);
     };
 
+    const updateChore = (id: string, choreData: Partial<Omit<Chore, 'id' | 'history'>>) => {
+        setChores(prev => prev.map(c => c.id === id ? { ...c, ...choreData } : c));
+    };
+
     const deleteChore = (id: string) => {
         setChores(prev => prev.filter(c => c.id !== id));
     };
@@ -131,7 +136,7 @@ export const ChoresProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     return (
-        <ChoresContext.Provider value={{ chores, addChore, deleteChore, completeChore, toggleChecklistItem, isChoreDoneToday }}>
+        <ChoresContext.Provider value={{ chores, addChore, updateChore, deleteChore, completeChore, toggleChecklistItem, isChoreDoneToday }}>
             {children}
         </ChoresContext.Provider>
     );

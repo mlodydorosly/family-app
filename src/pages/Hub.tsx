@@ -3,6 +3,9 @@ import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useChores } from '../context/ChoresContext';
+import { useEvents } from '../context/EventsContext';
+import { Calendar } from '../components/Calendar';
 
 export interface ShoppingItem {
     id: string;
@@ -20,71 +23,143 @@ export interface StickyNote {
 const NOTE_COLORS = ['#fef08a', '#fda4af', '#bae6fd', '#bbf7d0', '#e9d5ff'];
 
 export const Hub: React.FC = () => {
-    // --- Local State for Shopping List ---
-    const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
-    const [newItemName, setNewItemName] = useState('');
+    const { chores, isChoreDoneToday } = useChores();
+    const { events } = useEvents();
 
-    // --- Local State for Notes ---
-    const [notes, setNotes] = useState<StickyNote[]>([]);
-    const [newNoteText, setNewNoteText] = useState('');
-
-    // Load from local storage
-    useEffect(() => {
-        const sList = localStorage.getItem('family_app_shopping');
-        if (sList) setShoppingList(JSON.parse(sList));
-
-        const sNotes = localStorage.getItem('family_app_notes');
-        if (sNotes) setNotes(JSON.parse(sNotes));
-    }, []);
-
-    // Save to local storage
-    useEffect(() => {
-        localStorage.setItem('family_app_shopping', JSON.stringify(shoppingList));
-    }, [shoppingList]);
-
-    useEffect(() => {
-        localStorage.setItem('family_app_notes', JSON.stringify(notes));
-    }, [notes]);
-
-    // Shopping handlers
-    const handleAddShoppingItem = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newItemName.trim()) return;
-        setShoppingList([{ id: crypto.randomUUID(), name: newItemName, isBought: false }, ...shoppingList]);
-        setNewItemName('');
-    };
-
-    const toggleShoppingItem = (id: string) => {
-        setShoppingList(prev => prev.map(item => item.id === id ? { ...item, isBought: !item.isBought } : item));
-    };
-
-    const removeShoppingItem = (id: string) => {
-        setShoppingList(prev => prev.filter(i => i.id !== id));
-    };
-
-    // Note handlers
-    const handleAddNote = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newNoteText.trim()) return;
-        const randomColor = NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
-        setNotes([{ id: crypto.randomUUID(), text: newNoteText, color: randomColor, author: 'Ja' }, ...notes]);
-        setNewNoteText('');
-    };
-
-    const removeNote = (id: string) => {
-        setNotes(prev => prev.filter(n => n.id !== id));
-    };
+    const pendingChores = chores.filter(c => !isChoreDoneToday(c.id));
+    const todayEvents = events.filter(e => e.date === new Date().toISOString().split('T')[0]);
 
     return (
-        <div className="page-container animate-slide-up" style={{ paddingBottom: '6rem' }}>
-            <header className="mb-6 flex justify-between items-center" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+        <div className="page-container animate-slide-up">
+            <header className="mb-6 flex justify-between items-center" style={{ marginTop: '1rem' }}>
                 <div>
-                    <h1 className="text-3xl font-black" style={{ letterSpacing: '-0.5px' }}>Hub Domowy</h1>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>Wspólna przestrzeń organizacyjna</p>
+                    <h1 className="text-3xl font-black" style={{ letterSpacing: '-1.5px' }}>Hub Domowy</h1>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', fontWeight: 500 }}>Centrum dowodzenia</p>
                 </div>
             </header>
 
-            {/* --- Notes Section --- */}
+            {/* Notification Cards Carousel */}
+            <section style={{ marginBottom: '2.5rem' }}>
+                <div style={{
+                    display: 'flex',
+                    gap: '1.25rem',
+                    overflowX: 'auto',
+                    paddingBottom: '1rem',
+                    margin: '0 -1.5rem',
+                    paddingLeft: '1.5rem',
+                    scrollbarWidth: 'none'
+                }}>
+                    {/* Tasks Summary Card */}
+                    <motion.div
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            minWidth: '280px',
+                            padding: '1.5rem',
+                            borderRadius: 'var(--radius-lg)',
+                            background: 'var(--pastel-blue)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            height: '180px',
+                            boxShadow: 'var(--shadow-md)'
+                        }}
+                    >
+                        <div>
+                            <span style={{ fontSize: '2rem' }}>📝</span>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.5rem 0' }}>Twoje zadania</h3>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-main)', opacity: 0.7 }}>Dzisiaj masz {pendingChores.length} rzeczy do zrobienia</p>
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: '1.5rem' }}>{pendingChores.length} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>pozostało</span></div>
+                    </motion.div>
+
+                    {/* Events Summary Card */}
+                    <motion.div
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            minWidth: '280px',
+                            padding: '1.5rem',
+                            borderRadius: 'var(--radius-lg)',
+                            background: 'var(--pastel-mint)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            height: '180px',
+                            boxShadow: 'var(--shadow-md)'
+                        }}
+                    >
+                        <div>
+                            <span style={{ fontSize: '2rem' }}>🗓️</span>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.5rem 0' }}>Wydarzenia</h3>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-main)', opacity: 0.7 }}>
+                                {todayEvents.length > 0 ? `Masz ${todayEvents.length} wydarzeń dzisiaj` : 'Brak wydarzeń na dziś'}
+                            </p>
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: '1.5rem' }}>{todayEvents.length} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>dzisiaj</span></div>
+                    </motion.div>
+
+                    {/* Shop Promo Card */}
+                    <motion.div
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            minWidth: '280px',
+                            padding: '1.5rem',
+                            borderRadius: 'var(--radius-lg)',
+                            background: 'var(--pastel-pink)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            height: '180px',
+                            boxShadow: 'var(--shadow-md)'
+                        }}
+                    >
+                        <div>
+                            <span style={{ fontSize: '2rem' }}>🎁</span>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.5rem 0' }}>Nowości w sklepie</h3>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-main)', opacity: 0.7 }}>Sprawdź nowe nagrody!</p>
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: '1rem', textTransform: 'uppercase' }}>Zobacz sklep →</div>
+                    </motion.div>
+                </div>
+            </section>
+
+            {/* Quick Actions / Highlights */}
+            <section style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <h2 className="text-xl font-black">Nadchodzące wydarzenia</h2>
+                {events.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '2px dashed var(--color-border)' }}>
+                        Brak nadchodzących wydarzeń.
+                    </div>
+                ) : (
+                    events.slice(0, 3).map(event => (
+                        <div key={event.id} className="card-modern" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                            <div style={{
+                                width: '56px', height: '56px',
+                                borderRadius: '16px',
+                                background: 'var(--pastel-purple)',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>{new Date(event.date).toLocaleDateString('pl-PL', { month: 'short' })}</span>
+                                <span style={{ fontSize: '1.2rem', fontWeight: 900 }}>{new Date(event.date).getDate()}</span>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: 0, fontWeight: 800 }}>{event.title}</h4>
+                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{event.time || 'Cały dzień'} {event.location ? `• ${event.location}` : ''}</p>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </section>
+
+            {/* Shopping List Section (Mini version) */}
+            <section style={{ marginTop: '2.5rem' }}>
+                <h2 className="text-xl font-black mb-4">Lista zakupów 🛒</h2>
+                <div className="card-modern" style={{ padding: '1.25rem' }}>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Kliknij, aby przejść do pełnej listy zakupów w Hubie.</p>
+                </div>
+            </section>
+        </div>
+    );
+};
             <section style={{ marginBottom: '3rem' }}>
                 <h2 className="text-xl font-bold mb-3">Tablica Korkowa 📌</h2>
 
