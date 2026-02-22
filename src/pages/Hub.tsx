@@ -26,8 +26,63 @@ export const Hub: React.FC = () => {
     const { chores, isChoreDoneToday } = useChores();
     const { events } = useEvents();
 
+    // --- Local State for Shopping List ---
+    const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
+    const [newItemName, setNewItemName] = useState('');
+
+    // --- Local State for Notes ---
+    const [notes, setNotes] = useState<StickyNote[]>([]);
+    const [newNoteText, setNewNoteText] = useState('');
+
     const pendingChores = chores.filter(c => !isChoreDoneToday(c.id));
     const todayEvents = events.filter(e => e.date === new Date().toISOString().split('T')[0]);
+
+    // Load from local storage
+    useEffect(() => {
+        const sList = localStorage.getItem('family_app_shopping');
+        if (sList) setShoppingList(JSON.parse(sList));
+
+        const sNotes = localStorage.getItem('family_app_notes');
+        if (sNotes) setNotes(JSON.parse(sNotes));
+    }, []);
+
+    // Save to local storage
+    useEffect(() => {
+        localStorage.setItem('family_app_shopping', JSON.stringify(shoppingList));
+    }, [shoppingList]);
+
+    useEffect(() => {
+        localStorage.setItem('family_app_notes', JSON.stringify(notes));
+    }, [notes]);
+
+    // Shopping handlers
+    const handleAddShoppingItem = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newItemName.trim()) return;
+        setShoppingList([{ id: crypto.randomUUID(), name: newItemName, isBought: false }, ...shoppingList]);
+        setNewItemName('');
+    };
+
+    const toggleShoppingItem = (id: string) => {
+        setShoppingList(prev => prev.map(item => item.id === id ? { ...item, isBought: !item.isBought } : item));
+    };
+
+    const removeShoppingItem = (id: string) => {
+        setShoppingList(prev => prev.filter(i => i.id !== id));
+    };
+
+    // Note handlers
+    const handleAddNote = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newNoteText.trim()) return;
+        const randomColor = NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
+        setNotes([{ id: crypto.randomUUID(), text: newNoteText, color: randomColor, author: 'Ja' }, ...notes]);
+        setNewNoteText('');
+    };
+
+    const removeNote = (id: string) => {
+        setNotes(prev => prev.filter(n => n.id !== id));
+    };
 
     return (
         <div className="page-container animate-slide-up">
@@ -37,6 +92,8 @@ export const Hub: React.FC = () => {
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', fontWeight: 500 }}>Centrum dowodzenia</p>
                 </div>
             </header>
+
+            <Calendar chores={chores} events={events} />
 
             {/* Notification Cards Carousel */}
             <section style={{ marginBottom: '2.5rem' }}>
@@ -122,46 +179,9 @@ export const Hub: React.FC = () => {
                 </div>
             </section>
 
-            {/* Quick Actions / Highlights */}
-            <section style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <h2 className="text-xl font-black">Nadchodzące wydarzenia</h2>
-                {events.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-md)', border: '2px dashed var(--color-border)' }}>
-                        Brak nadchodzących wydarzeń.
-                    </div>
-                ) : (
-                    events.slice(0, 3).map(event => (
-                        <div key={event.id} className="card-modern" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div style={{
-                                width: '56px', height: '56px',
-                                borderRadius: '16px',
-                                background: 'var(--pastel-purple)',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>{new Date(event.date).toLocaleDateString('pl-PL', { month: 'short' })}</span>
-                                <span style={{ fontSize: '1.2rem', fontWeight: 900 }}>{new Date(event.date).getDate()}</span>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <h4 style={{ margin: 0, fontWeight: 800 }}>{event.title}</h4>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{event.time || 'Cały dzień'} {event.location ? `• ${event.location}` : ''}</p>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </section>
-
-            {/* Shopping List Section (Mini version) */}
-            <section style={{ marginTop: '2.5rem' }}>
-                <h2 className="text-xl font-black mb-4">Lista zakupów 🛒</h2>
-                <div className="card-modern" style={{ padding: '1.25rem' }}>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Kliknij, aby przejść do pełnej listy zakupów w Hubie.</p>
-                </div>
-            </section>
-        </div>
-    );
-};
+            {/* --- Notes Section --- */}
             <section style={{ marginBottom: '3rem' }}>
-                <h2 className="text-xl font-bold mb-3">Tablica Korkowa 📌</h2>
+                <h2 className="text-xl font-black mb-3">Tablica Korkowa 📌</h2>
 
                 <form onSubmit={handleAddNote} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                     <Input
@@ -173,7 +193,7 @@ export const Hub: React.FC = () => {
                     <Button type="submit">Przyklej</Button>
                 </form>
 
-                <div style={{ display: 'flex', overflowX: 'auto', gap: '1rem', paddingBottom: '1rem', margin: '0 -1rem', paddingLeft: '1rem', scrollSnapType: 'x mandatory' }}>
+                <div style={{ display: 'flex', overflowX: 'auto', gap: '1rem', paddingBottom: '1rem', margin: '0 -1.5rem', paddingLeft: '1.5rem', scrollSnapType: 'x mandatory' }}>
                     <AnimatePresence>
                         {notes.length === 0 ? (
                             <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: '1rem 0' }}>Brak przyklejonych notatek.</div>
@@ -205,10 +225,10 @@ export const Hub: React.FC = () => {
             </section>
 
             {/* --- Shopping List Section --- */}
-            <section>
-                <h2 className="text-xl font-bold mb-3">Lista Zakupów 🛒</h2>
+            <section style={{ marginBottom: '3rem' }}>
+                <h2 className="text-xl font-black mb-3">Lista Zakupów 🛒</h2>
 
-                <Card style={{ padding: '1rem' }}>
+                <Card style={{ padding: '1.5rem' }}>
                     <form onSubmit={handleAddShoppingItem} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                         <Input
                             placeholder="Co potrzebujemy kupić?"
@@ -219,7 +239,7 @@ export const Hub: React.FC = () => {
                         <Button type="submit" variant="secondary">Dodaj</Button>
                     </form>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <AnimatePresence>
                             {shoppingList.length === 0 ? (
                                 <p className="text-sm text-color-text-muted text-center py-4">Lista jest pusta. Lodówka pełna!</p>
@@ -231,7 +251,7 @@ export const Hub: React.FC = () => {
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
-                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', backgroundColor: 'var(--color-background)', borderRadius: '8px' }}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', backgroundColor: 'var(--color-background)', borderRadius: 'var(--radius-md)' }}
                                     >
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', flex: 1 }}>
                                             <input
@@ -240,11 +260,11 @@ export const Hub: React.FC = () => {
                                                 onChange={() => toggleShoppingItem(item.id)}
                                                 style={{ width: '20px', height: '20px', accentColor: 'var(--color-primary)' }}
                                             />
-                                            <span style={{ fontSize: '1rem', textDecoration: item.isBought ? 'line-through' : 'none', color: item.isBought ? 'var(--color-text-muted)' : 'var(--color-text-main)' }}>
+                                            <span style={{ fontSize: '1.1rem', fontWeight: 600, textDecoration: item.isBought ? 'line-through' : 'none', color: item.isBought ? 'var(--color-text-muted)' : 'var(--color-text-main)' }}>
                                                 {item.name}
                                             </span>
                                         </label>
-                                        <button onClick={() => removeShoppingItem(item.id)} style={{ border: 'none', background: 'none', color: 'var(--color-danger)', opacity: 0.5, cursor: 'pointer' }}>Usuń</button>
+                                        <button onClick={() => removeShoppingItem(item.id)} style={{ border: 'none', background: 'none', color: 'var(--color-danger)', opacity: 0.5, cursor: 'pointer', fontSize: '1.2rem' }}>🗑️</button>
                                     </motion.div>
                                 ))
                             )}

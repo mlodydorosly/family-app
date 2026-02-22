@@ -6,6 +6,7 @@ export interface Reward {
     title: string;
     cost: number;
     icon: string;
+    category: string;
 }
 
 export interface PurchaseRecord {
@@ -27,9 +28,9 @@ interface ShopContextType {
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 const INITIAL_REWARDS: Reward[] = [
-    { id: '1', title: '1 godzina grania', cost: 50, icon: '🎮' },
-    { id: '2', title: 'Wyjście na lody', cost: 100, icon: '🍦' },
-    { id: '3', title: 'Zwolnienie z jednego obowiązku', cost: 150, icon: '🎫' },
+    { id: '1', title: '1 godzina grania', cost: 50, icon: '🎮', category: 'Rozrywka' },
+    { id: '2', title: 'Wyjście na lody', cost: 100, icon: '🍦', category: 'Jedzenie' },
+    { id: '3', title: 'Zwolnienie z obowiązku', cost: 150, icon: '🎫', category: 'Przywileje' },
 ];
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -40,8 +41,17 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const storedRewards = localStorage.getItem('family_app_rewards');
-        if (storedRewards) setRewards(JSON.parse(storedRewards));
-        else setRewards(INITIAL_REWARDS);
+        if (storedRewards) {
+            const parsed = JSON.parse(storedRewards);
+            // Migracja: dodaj kategorię jeśli jej nie ma
+            const migrated = parsed.map((r: any) => ({
+                ...r,
+                category: r.category || 'Inne'
+            }));
+            setRewards(migrated);
+        } else {
+            setRewards(INITIAL_REWARDS);
+        }
 
         const storedPurchases = localStorage.getItem('family_app_purchases');
         if (storedPurchases) setPurchases(JSON.parse(storedPurchases));
