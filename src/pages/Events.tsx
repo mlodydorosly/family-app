@@ -31,7 +31,7 @@ export const Events: React.FC = () => {
         });
 
         notify(`Wydarzenie "${title}" dodane! 📅`, 'success');
-        
+
         // Reset form
         setTitle('');
         setDate('');
@@ -44,7 +44,7 @@ export const Events: React.FC = () => {
     const pastEvents = events.filter(e => e.date < new Date().toISOString().split('T')[0]);
 
     return (
-        <div className="page-container animate-slide-up">
+        <div className="page-container animate-slide-up" style={{ paddingBottom: '7rem' }}>
             <header className="mb-8" style={{ marginTop: '1rem' }}>
                 <h1 className="text-3xl font-black" style={{ letterSpacing: '-1.5px' }}>Wydarzenia</h1>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', fontWeight: 500 }}>Wspólne plany rodzinne</p>
@@ -54,15 +54,15 @@ export const Events: React.FC = () => {
             <AnimatePresence>
                 {showAddForm && (
                     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }}>
-                        <motion.div 
+                        <motion.div
                             initial={{ y: '100%' }}
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
-                            style={{ 
-                                width: '100%', 
-                                backgroundColor: 'var(--color-surface)', 
-                                padding: '2rem', 
-                                borderTopLeftRadius: '32px', 
+                            style={{
+                                width: '100%',
+                                backgroundColor: 'var(--color-surface)',
+                                padding: '2rem',
+                                borderTopLeftRadius: '32px',
                                 borderTopRightRadius: '32px',
                                 boxShadow: '0 -10px 25px rgba(0,0,0,0.1)'
                             }}
@@ -121,7 +121,7 @@ export const Events: React.FC = () => {
                     upcomingEvents.map((event) => {
                         const creator = profiles.find(p => p.id === event.createdBy);
                         const dateObj = new Date(event.date);
-                        
+
                         return (
                             <motion.div
                                 key={event.id}
@@ -148,7 +148,7 @@ export const Events: React.FC = () => {
                                         </span>
                                         <span style={{ fontSize: '1.5rem', fontWeight: 900 }}>{dateObj.getDate()}</span>
                                     </div>
-                                    
+
                                     <div style={{ flex: 1 }}>
                                         <h4 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.5px' }}>{event.title}</h4>
                                         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
@@ -157,8 +157,8 @@ export const Events: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <button 
-                                        onClick={() => { if(window.confirm('Usunąć to wydarzenie?')) deleteEvent(event.id); }}
+                                    <button
+                                        onClick={() => { if (window.confirm('Usunąć to wydarzenie?')) deleteEvent(event.id); }}
                                         style={{ border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer', opacity: 0.3 }}
                                     >🗑️</button>
                                 </div>
@@ -182,6 +182,9 @@ export const Events: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Element dystansujący dla przycisku FAB */}
+            <div style={{ height: '120px' }} />
 
             {/* FAB */}
             <button className="fab" onClick={() => setShowAddForm(true)} style={{ zIndex: 100 }}>+</button>

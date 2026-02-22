@@ -79,13 +79,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, 'profiles'), (snapshot) => {
             const loadedProfiles: UserProfile[] = [];
-            let isInitialSetup = false;
 
-            if (snapshot.empty && !loading) {
+            if (snapshot.empty) {
                 // Initialize default profiles in Firestore if empty
-                isInitialSetup = true;
                 DEFAULT_PROFILES.forEach(async (p) => {
-                    await setDoc(doc(db, 'profiles', p.id), p);
+                    await setDoc(doc(db, 'profiles', p.id), p).catch(console.error);
                 });
             } else {
                 snapshot.forEach(doc => {
@@ -103,7 +101,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 }
             }
-            if (!isInitialSetup) setLoading(false);
+            setLoading(false);
+        }, (error) => {
+            console.error("Błąd pobierania profili z Firebase:", error);
+            setLoading(false); // Zapobiega zablokowaniu ekranu (pusty ekran) w przypadku błędu
         });
 
         return () => unsubscribe();
