@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { db } from '../firebase';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 export interface FamilyEvent {
     id: string;
@@ -29,35 +31,46 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [initialized, setInitialized] = useState(false);
 
     useEffect(() => {
-        const stored = localStorage.getItem('family_app_events');
-        if (stored) {
-            setEvents(JSON.parse(stored));
-        } else {
-            setEvents(MOCK_EVENTS);
-        }
-        setInitialized(true);
+        const unsubscribe = onSnapshot(collection(db, 'events'), (snapshot) => {
+            const loaded: FamilyEvent[] = [];
+            let isInitialSetup = false;
+
+            if (snapshot.empty && !initialized) {
+                isInitialSetup = true;
+                MOCK_EVENTS.forEach(async (e) => {
+                    await setDoc(doc(db, 'events', e.id), e);
+                });
+            } else {
+                snapshot.forEach(doc => {
+                    loaded.push(doc.data() as FamilyEvent);
+                });
+                loaded.sort((a, b) => a.date.localeCompare(b.date));
+                setEvents(loaded);
+            }
+            if (!isInitialSetup) setInitialized(true);
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        if (initialized) {
-            localStorage.setItem('family_app_events', JSON.stringify(events));
-        }
-    }, [events, initialized]);
-
-    const addEvent = (eventData: Omit<FamilyEvent, 'id'>) => {
-        const newEvent: FamilyEvent = {
-            ...eventData,
-            id: crypto.randomUUID()
-        };
-        setEvents(prev => [...prev, newEvent].sort((a, b) => a.date.localeCompare(b.date)));
+    const addEvent = async (eventData: Omit<FamilyEvent, 'id'>) => {
+        const id = crypto.randomUUID();
+        const newEvent: FamilyEvent = { ...eventData, id };
+        try {
+            await setDoc(doc(db, 'events', id), newEvent);
+        } catch (e) { console.error(e); }
     };
 
-    const deleteEvent = (id: string) => {
-        setEvents(prev => prev.filter(e => e.id !== id));
+    const deleteEvent = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'events', id));
+        } catch (e) { console.error(e); }
     };
 
-    const updateEvent = (id: string, data: Partial<FamilyEvent>) => {
-        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...data } : e));
+    const updateEvent = async (id: string, data: Partial<FamilyEvent>) => {
+        try {
+            await updateDoc(doc(db, 'events', id), data);
+        } catch (e) { console.error(e); }
     };
 
     return (

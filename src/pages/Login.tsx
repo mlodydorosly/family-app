@@ -8,7 +8,7 @@ export const Login: React.FC = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(180deg, var(--pastel-blue) 0%, var(--color-background) 100%)',
+            background: 'linear-gradient(135deg, var(--pastel-blue) 0%, var(--pastel-purple) 40%, var(--color-background) 100%)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -53,9 +53,9 @@ export const Login: React.FC = () => {
                         whileTap={{ scale: 0.95 }}
                         style={{
                             background: 'var(--color-surface)',
-                            border: 'none',
-                            borderRadius: 'var(--radius-md)',
-                            padding: '2rem 1.5rem',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-lg)',
+                            padding: '2.5rem 1.5rem',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
@@ -71,7 +71,7 @@ export const Login: React.FC = () => {
                             top: 0, left: 0, right: 0, height: '6px',
                             backgroundColor: profile.themeColor
                         }} />
-                        
+
                         <div style={{
                             fontSize: '3rem',
                             width: '70px', height: '70px',

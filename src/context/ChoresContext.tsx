@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { db } from '../firebase';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 export interface ChecklistItem {
     id: string;
@@ -11,6 +13,7 @@ export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export interface ChoreRecord {
     date: string; // ISO date
+    time?: string; // HH:mm
     completedBy: string; // profile id
 }
 
@@ -68,31 +71,44 @@ export const ChoresProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const getTodayStr = () => new Date().toLocaleDateString('pl-PL');
 
     useEffect(() => {
-        const stored = localStorage.getItem('family_app_chores_v2');
-        if (stored) {
-            setChores(JSON.parse(stored));
-        } else {
-            setChores(INITIAL_CHORES);
-        }
-        setInitialized(true);
+        const unsubscribe = onSnapshot(collection(db, 'chores'), (snapshot) => {
+            const loaded: Chore[] = [];
+            let isInitialSetup = false;
+
+            if (snapshot.empty && !initialized) {
+                isInitialSetup = true;
+                INITIAL_CHORES.forEach(async (c) => {
+                    await setDoc(doc(db, 'chores', c.id), c);
+                });
+            } else {
+                snapshot.forEach(doc => {
+                    loaded.push(doc.data() as Chore);
+                });
+                setChores(loaded);
+            }
+            if (!isInitialSetup) setInitialized(true);
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        if (initialized) {
-            localStorage.setItem('family_app_chores_v2', JSON.stringify(chores));
-        }
-    }, [chores, initialized]);
-
-    const addChore = (choreData: Omit<Chore, 'id' | 'history'>) => {
-        setChores(prev => [...prev, { ...choreData, id: crypto.randomUUID(), history: [] }]);
+    const addChore = async (choreData: Omit<Chore, 'id' | 'history'>) => {
+        const id = crypto.randomUUID();
+        try {
+            await setDoc(doc(db, 'chores', id), { ...choreData, id, history: [] });
+        } catch (e) { console.error(e); }
     };
 
-    const updateChore = (id: string, choreData: Partial<Omit<Chore, 'id' | 'history'>>) => {
-        setChores(prev => prev.map(c => c.id === id ? { ...c, ...choreData } : c));
+    const updateChore = async (id: string, choreData: Partial<Omit<Chore, 'id' | 'history'>>) => {
+        try {
+            await updateDoc(doc(db, 'chores', id), choreData);
+        } catch (e) { console.error(e); }
     };
 
-    const deleteChore = (id: string) => {
-        setChores(prev => prev.filter(c => c.id !== id));
+    const deleteChore = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'chores', id));
+        } catch (e) { console.error(e); }
     };
 
     const isChoreDoneToday = (id: string) => {
@@ -101,38 +117,39 @@ export const ChoresProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return chore.history.some(record => record.date === getTodayStr());
     };
 
-    const completeChore = (id: string, profileId: string) => {
+    const completeChore = async (id: string, profileId: string) => {
         const today = getTodayStr();
-
         if (isChoreDoneToday(id)) return;
 
-        setChores(prev => prev.map(chore => {
-            if (chore.id === id) {
-                addPoints(chore.points);
+        const chore = chores.find(c => c.id === id);
+        if (!chore) return;
 
-                // Reset checklist for recurring tasks when completed
-                const resetChecklist = chore.checklist.map(item => ({ ...item, isDone: false }));
+        addPoints(chore.points);
 
-                return {
-                    ...chore,
-                    checklist: chore.recurrence !== 'none' ? resetChecklist : chore.checklist,
-                    history: [...chore.history, { date: today, completedBy: profileId }]
-                };
-            }
-            return chore;
-        }));
+        const resetChecklist = chore.checklist.map(item => ({ ...item, isDone: false }));
+        const nowTime = new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+
+        try {
+            await updateDoc(doc(db, 'chores', id), {
+                checklist: chore.recurrence !== 'none' ? resetChecklist : chore.checklist,
+                history: [...chore.history, { date: today, time: nowTime, completedBy: profileId }]
+            });
+        } catch (e) { console.error(e); }
     };
 
-    const toggleChecklistItem = (choreId: string, itemId: string) => {
-        setChores(prev => prev.map(chore => {
-            if (chore.id !== choreId) return chore;
-            return {
-                ...chore,
-                checklist: chore.checklist.map(item =>
-                    item.id === itemId ? { ...item, isDone: !item.isDone } : item
-                )
-            };
-        }));
+    const toggleChecklistItem = async (choreId: string, itemId: string) => {
+        const chore = chores.find(c => c.id === choreId);
+        if (!chore) return;
+
+        const updatedChecklist = chore.checklist.map(item =>
+            item.id === itemId ? { ...item, isDone: !item.isDone } : item
+        );
+
+        try {
+            await updateDoc(doc(db, 'chores', choreId), {
+                checklist: updatedChecklist
+            });
+        } catch (e) { console.error(e); }
     };
 
     return (

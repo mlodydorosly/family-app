@@ -39,14 +39,14 @@ export const Home: React.FC = () => {
     };
 
     return (
-        <div className="page-container animate-slide-up">
+        <div className="page-container animate-slide-up" style={{ paddingBottom: '7rem' }}>
             <header className="mb-8" style={{ marginTop: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <h1 className="text-3xl font-black" style={{ letterSpacing: '-1.5px' }}>Zadania</h1>
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', fontWeight: 500 }}>Dzisiaj masz {pendingChores.length} do zrobienia</p>
                     </div>
-                    <div 
+                    <div
                         onClick={() => navigate('/profile')}
                         style={{
                             width: '56px', height: '56px',
@@ -66,7 +66,7 @@ export const Home: React.FC = () => {
 
             {/* Sorting */}
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'none' }}>
-                <button 
+                <button
                     onClick={() => setSortBy('date')}
                     style={{
                         padding: '0.6rem 1.2rem',
@@ -83,7 +83,7 @@ export const Home: React.FC = () => {
                 >
                     📅 Wszystkie
                 </button>
-                <button 
+                <button
                     onClick={() => setSortBy('points')}
                     style={{
                         padding: '0.6rem 1.2rem',
@@ -140,7 +140,7 @@ export const Home: React.FC = () => {
                                     >
                                         {animatingId === chore.id && '✓'}
                                     </button>
-                                    
+
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>{chore.title}</h4>
@@ -151,22 +151,24 @@ export const Home: React.FC = () => {
                                         <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
                                             {chore.description || 'Brak opisu'}
                                         </p>
-                                        
-                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', background: 'var(--color-background)', padding: '4px 8px', borderRadius: '8px' }}>
-                                                🔁 {chore.recurrence === 'daily' ? 'Codziennie' : chore.recurrence === 'weekly' ? 'Co tydzień' : 'Raz'}
-                                            </span>
-                                            {chore.assignedTo && (
-                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', background: 'var(--color-background)', padding: '4px 8px', borderRadius: '8px' }}>
-                                                    👤 {profiles.find(p => p.id === chore.assignedTo)?.name}
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', background: 'var(--color-background)', padding: '4px 8px', borderRadius: '8px' }}>
+                                                    🔁 {chore.recurrence === 'daily' ? 'Codziennie' : chore.recurrence === 'weekly' ? 'Co tydzień' : 'Raz'}
                                                 </span>
-                                            )}
+                                                {chore.assignedTo && (
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', background: 'var(--color-background)', padding: '4px 8px', borderRadius: '8px' }}>
+                                                        👤 {profiles.find(p => p.id === chore.assignedTo)?.name}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={() => navigate(`/edit/${chore.id}`)} style={{ border: '2px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-main)', borderRadius: '8px', padding: '0.4rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 700 }}>Edytuj</button>
+                                                <button onClick={() => handleDelete(chore.id)} style={{ border: 'none', background: 'var(--color-danger)', color: 'white', borderRadius: '8px', padding: '0.4rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 700, boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)' }}>Usuń</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        <button onClick={() => navigate(`/edit/${chore.id}`)} style={{ border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer', opacity: 0.5 }}>✏️</button>
-                                        <button onClick={() => handleDelete(chore.id)} style={{ border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer', opacity: 0.5 }}>🗑️</button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -179,16 +181,39 @@ export const Home: React.FC = () => {
             {completedChores.length > 0 && (
                 <div style={{ marginTop: '3rem' }}>
                     <h3 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '1px' }}>Wykonane dziś</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', opacity: 0.6 }}>
-                        {completedChores.map(chore => (
-                            <div key={chore.id} className="card-modern" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{ textDecoration: 'line-through', fontWeight: 600 }}>{chore.title}</span>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>+{chore.points} 🪙</span>
-                            </div>
-                        ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', opacity: 0.8 }}>
+                        {completedChores.map(chore => {
+                            const todayStr = new Date().toLocaleDateString('pl-PL');
+                            const completionsToday = chore.history.filter(h => h.date === todayStr);
+
+                            return (
+                                <div key={chore.id} className="card-modern" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ textDecoration: 'line-through', fontWeight: 600 }}>{chore.title}</span>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>+{chore.points} 🪙</span>
+                                    </div>
+                                    {completionsToday.map((historyRecord, index) => {
+                                        const profile = profiles.find(p => p.id === historyRecord.completedBy);
+                                        return (
+                                            <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', fontSize: '0.8rem', color: 'var(--color-text-muted)', background: 'var(--color-background)', padding: '0.4rem 0.8rem', borderRadius: '8px', alignSelf: 'stretch' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span style={{ fontSize: '1rem' }}>{profile?.avatarUrl}</span>
+                                                    <span style={{ fontWeight: 600 }}>{profile?.name}</span>
+                                                    <span>ukończył(a) zadanie</span>
+                                                </div>
+                                                {historyRecord.time && (
+                                                    <span style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-text-main)', opacity: 0.8 }}>{historyRecord.time}</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
+            <div style={{ height: '120px' }} />
 
             <button className="fab" onClick={() => navigate('/add')}>+</button>
         </div>

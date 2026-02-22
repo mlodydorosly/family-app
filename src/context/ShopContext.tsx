@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { db } from '../firebase';
+import { collection, doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 
 export interface Reward {
     id: string;
@@ -40,41 +42,54 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { currentUser, addPoints } = useAuth();
 
     useEffect(() => {
-        const storedRewards = localStorage.getItem('family_app_rewards');
-        if (storedRewards) {
-            const parsed = JSON.parse(storedRewards);
-            // Migracja: dodaj kategorię jeśli jej nie ma
-            const migrated = parsed.map((r: any) => ({
-                ...r,
-                category: r.category || 'Inne'
-            }));
-            setRewards(migrated);
-        } else {
-            setRewards(INITIAL_REWARDS);
-        }
+        const unsubscribeRewards = onSnapshot(collection(db, 'rewards'), (snapshot) => {
+            const loaded: Reward[] = [];
+            let isInitialSetup = false;
 
-        const storedPurchases = localStorage.getItem('family_app_purchases');
-        if (storedPurchases) setPurchases(JSON.parse(storedPurchases));
+            if (snapshot.empty && !initialized) {
+                isInitialSetup = true;
+                INITIAL_REWARDS.forEach(async (r) => {
+                    await setDoc(doc(db, 'rewards', r.id), r);
+                });
+            } else {
+                snapshot.forEach(doc => {
+                    const data = doc.data() as Reward;
+                    loaded.push({ ...data, category: data.category || 'Inne' });
+                });
+                setRewards(loaded);
+            }
+            if (!isInitialSetup) setInitialized(true);
+        });
 
-        setInitialized(true);
+        const unsubscribePurchases = onSnapshot(collection(db, 'purchases'), (snapshot) => {
+            const loaded: PurchaseRecord[] = [];
+            snapshot.forEach(doc => loaded.push(doc.data() as PurchaseRecord));
+            loaded.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setPurchases(loaded);
+        });
+
+        return () => {
+            unsubscribeRewards();
+            unsubscribePurchases();
+        };
     }, []);
 
-    useEffect(() => {
-        if (initialized) {
-            localStorage.setItem('family_app_rewards', JSON.stringify(rewards));
-            localStorage.setItem('family_app_purchases', JSON.stringify(purchases));
-        }
-    }, [rewards, purchases, initialized]);
-
-    const addReward = (rewardData: Omit<Reward, 'id'>) => {
-        setRewards(prev => [...prev, { ...rewardData, id: crypto.randomUUID() }]);
+    const addReward = async (rewardData: Omit<Reward, 'id'>) => {
+        const id = crypto.randomUUID();
+        try {
+            await setDoc(doc(db, 'rewards', id), { ...rewardData, id });
+        } catch (e) { console.error(e); }
     };
 
-    const deleteReward = (id: string) => {
-        setRewards(prev => prev.filter(r => r.id !== id));
+    const deleteReward = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'rewards', id));
+        } catch (e) { console.error(e); }
     };
 
     const purchaseReward = (id: string) => {
+        // Zwraca sync true/false by zamknąć UI od razu,
+        // a zapis do bazy leci w tle.
         if (!currentUser) return false;
 
         const reward = rewards.find(r => r.id === id);
@@ -82,16 +97,17 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (currentUser.points >= reward.cost) {
             addPoints(-reward.cost);
-            
+
+            const purchaseId = crypto.randomUUID();
             const newPurchase: PurchaseRecord = {
-                id: crypto.randomUUID(),
+                id: purchaseId,
                 rewardTitle: reward.title,
                 purchasedBy: currentUser.id,
-                date: new Date().toLocaleDateString('pl-PL'),
+                date: new Date().toISOString(),
                 cost: reward.cost
             };
-            
-            setPurchases(prev => [newPurchase, ...prev]);
+
+            setDoc(doc(db, 'purchases', purchaseId), newPurchase).catch(console.error);
             return true;
         }
 

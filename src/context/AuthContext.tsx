@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { db } from '../firebase';
+import { collection, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 
 export interface UserProfile {
     id: string; // 'ola' or 'maciek'
@@ -57,48 +59,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [profiles, setProfiles] = useState<UserProfile[]>(DEFAULT_PROFILES);
     const [loading, setLoading] = useState(true);
 
-    // Load state from LocalStorage on mount
+    // Load current user ID from LocalStorage on mount
     useEffect(() => {
         try {
-            const storedProfiles = localStorage.getItem('family_app_profiles');
-            if (storedProfiles) {
-                setProfiles(JSON.parse(storedProfiles));
-            }
-
-            const storedUser = localStorage.getItem('family_app_current_user');
-            if (storedUser) {
-                setCurrentUser(JSON.parse(storedUser));
+            const storedUserId = localStorage.getItem('family_app_current_user_id');
+            if (storedUserId) {
+                // Wait for profiles to load from Firebase to set currentUser
+                const profile = profiles.find(p => p.id === storedUserId);
+                if (profile && !currentUser) {
+                    setCurrentUser(profile);
+                }
             }
         } catch (e) {
-            console.error("Failed to load auth state", e);
-        } finally {
-            setLoading(false);
+            console.error("Failed to load local user state", e);
         }
+    }, [profiles, currentUser]);
+
+    // Real-time listener for profiles from Firestore
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'profiles'), (snapshot) => {
+            const loadedProfiles: UserProfile[] = [];
+            let isInitialSetup = false;
+
+            if (snapshot.empty && !loading) {
+                // Initialize default profiles in Firestore if empty
+                isInitialSetup = true;
+                DEFAULT_PROFILES.forEach(async (p) => {
+                    await setDoc(doc(db, 'profiles', p.id), p);
+                });
+            } else {
+                snapshot.forEach(doc => {
+                    loadedProfiles.push(doc.data() as UserProfile);
+                });
+                if (loadedProfiles.length > 0) {
+                    // Sort to maintain original order (Ola then Maciek)
+                    loadedProfiles.sort((a, b) => a.id.localeCompare(b.id)).reverse();
+                    setProfiles(loadedProfiles);
+
+                    // Update current user if it exists
+                    if (currentUser) {
+                        const updatedCur = loadedProfiles.find(p => p.id === currentUser.id);
+                        if (updatedCur) setCurrentUser(updatedCur);
+                    }
+                }
+            }
+            if (!isInitialSetup) setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, []);
-
-    // Save profiles whenever they change
-    useEffect(() => {
-        localStorage.setItem('family_app_profiles', JSON.stringify(profiles));
-    }, [profiles]);
-
-    // Save current user whenever it changes
-    useEffect(() => {
-        if (currentUser) {
-            localStorage.setItem('family_app_current_user', JSON.stringify(currentUser));
-        } else {
-            localStorage.removeItem('family_app_current_user');
-        }
-    }, [currentUser]);
 
     const signInAs = (id: string) => {
         const profile = profiles.find(p => p.id === id);
         if (profile) {
             setCurrentUser(profile);
+            localStorage.setItem('family_app_current_user_id', id);
         }
     };
 
     const signOut = () => {
         setCurrentUser(null);
+        localStorage.removeItem('family_app_current_user_id');
     };
 
     const calculateLevelAndTitle = (xp: number) => {
@@ -111,36 +132,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { level, title };
     };
 
-    const addPoints = (amount: number, addXp: boolean = true) => {
+    const addPoints = async (amount: number, addXp: boolean = true) => {
         if (!currentUser) return;
 
-        // Update local context user
         const newPoints = currentUser.points + amount;
         const newXp = addXp && amount > 0 ? currentUser.xp + amount : currentUser.xp;
         const { level, title } = calculateLevelAndTitle(newXp);
 
-        const updatedUser = {
-            ...currentUser,
-            points: newPoints < 0 ? 0 : newPoints, // Prevent negative points visually
-            xp: newXp,
-            level,
-            title
-        };
-        setCurrentUser(updatedUser);
-
-        // Update the profile array
-        setProfiles(prev => prev.map(p => p.id === currentUser.id ? updatedUser : p));
+        try {
+            await updateDoc(doc(db, 'profiles', currentUser.id), {
+                points: newPoints < 0 ? 0 : newPoints,
+                xp: newXp,
+                level,
+                title
+            });
+        } catch (e) {
+            console.error('Failed to update points', e);
+        }
     };
 
-    const awardBadge = (id: string, badge: string) => {
-        setProfiles(prev => prev.map(p => {
-            if (p.id === id && !p.badges.includes(badge)) {
-                const updatedUser = { ...p, badges: [...p.badges, badge] };
-                if (currentUser?.id === id) setCurrentUser(updatedUser);
-                return updatedUser;
+    const awardBadge = async (id: string, badge: string) => {
+        const profile = profiles.find(p => p.id === id);
+        if (profile && !profile.badges.includes(badge)) {
+            try {
+                await updateDoc(doc(db, 'profiles', id), {
+                    badges: [...profile.badges, badge]
+                });
+            } catch (e) {
+                console.error('Failed to award badge', e);
             }
-            return p;
-        }));
+        }
     };
 
     return (

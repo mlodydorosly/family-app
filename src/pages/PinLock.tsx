@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // To zmień na swój PIN (musi być 4-cyfrowy string)
-const APP_PIN = '1234';
+const APP_PIN = '1471';
 const STORAGE_KEY = 'family_app_pin_unlocked';
 
 interface PinLockProps {
@@ -60,7 +60,7 @@ export const PinLock: React.FC<PinLockProps> = ({ children }) => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'var(--color-background)',
+            background: 'linear-gradient(135deg, var(--pastel-blue) 0%, var(--color-background) 100%)',
             padding: '2rem',
             gap: '2rem'
         }}>
@@ -155,9 +155,6 @@ export const PinLock: React.FC<PinLockProps> = ({ children }) => {
                 ))}
             </div>
 
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: '1rem' }}>
-                Domyślny PIN: <strong>1234</strong> — zmień go w pliku PinLock.tsx
-            </p>
         </div>
     );
 };

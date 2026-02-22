@@ -51,18 +51,24 @@
 
 :root {
   /* Nowa Pastelowa Paleta */
-  --color-primary: #7dd3fc; /* Jasny niebieski */
-  --color-primary-hover: #38bdf8;
-  --color-primary-light: #f0f9ff;
-  
-  --color-secondary: #f472b6; /* Pastelowy róż */
-  --color-success: #34d399;   /* Pastelowa mięta */
-  --color-warning: #fbbf24;   /* Pastelowy pomarańcz */
-  --color-danger: #f87171;
-  
-  --color-background: #f8fafc; /* Bardzo jasny szary/niebieski */
+  --color-primary: #3b82f6;
+  /* Lepiej widoczny niebieski */
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+
+  --color-secondary: #ec4899;
+  /* Zdecydowany róż */
+  --color-success: #10b981;
+  /* Widoczna mięta/zielony */
+  --color-warning: #f59e0b;
+  /* Pomarańcz */
+  --color-danger: #ef4444;
+  /* Czerwony */
+
+  --color-background: #f8fafc;
+  /* Bardzo jasny szary/niebieski */
   --color-surface: #ffffff;
-  
+
   --color-text-main: #1e293b;
   --color-text-muted: #64748b;
   --color-border: #f1f5f9;
@@ -92,7 +98,16 @@
   --color-text-main: #f8fafc;
   --color-text-muted: #94a3b8;
   --color-border: #334155;
-  --color-primary-light: rgba(125, 211, 252, 0.1);
+  --color-primary: #3b82f6;
+  --color-primary-hover: #60a5fa;
+  --color-primary-light: rgba(59, 130, 246, 0.15);
+
+  --pastel-blue: rgba(14, 165, 233, 0.15);
+  --pastel-pink: rgba(236, 72, 153, 0.15);
+  --pastel-mint: rgba(16, 185, 129, 0.15);
+  --pastel-yellow: rgba(245, 158, 11, 0.15);
+  --pastel-purple: rgba(168, 85, 247, 0.15);
+
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
 }
 

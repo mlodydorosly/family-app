@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
@@ -37,51 +39,69 @@ export const Hub: React.FC = () => {
     const pendingChores = chores.filter(c => !isChoreDoneToday(c.id));
     const todayEvents = events.filter(e => e.date === new Date().toISOString().split('T')[0]);
 
-    // Load from local storage
+    // Load from Firebase
     useEffect(() => {
-        const sList = localStorage.getItem('family_app_shopping');
-        if (sList) setShoppingList(JSON.parse(sList));
+        const unsubscribeShopping = onSnapshot(collection(db, 'shopping'), (snapshot) => {
+            const loadedShopping: ShoppingItem[] = [];
+            snapshot.forEach(doc => loadedShopping.push(doc.data() as ShoppingItem));
+            setShoppingList(loadedShopping);
+        });
 
-        const sNotes = localStorage.getItem('family_app_notes');
-        if (sNotes) setNotes(JSON.parse(sNotes));
+        const unsubscribeNotes = onSnapshot(collection(db, 'notes'), (snapshot) => {
+            const loadedNotes: StickyNote[] = [];
+            snapshot.forEach(doc => loadedNotes.push(doc.data() as StickyNote));
+            setNotes(loadedNotes);
+        });
+
+        return () => {
+            unsubscribeShopping();
+            unsubscribeNotes();
+        };
     }, []);
 
-    // Save to local storage
-    useEffect(() => {
-        localStorage.setItem('family_app_shopping', JSON.stringify(shoppingList));
-    }, [shoppingList]);
-
-    useEffect(() => {
-        localStorage.setItem('family_app_notes', JSON.stringify(notes));
-    }, [notes]);
-
     // Shopping handlers
-    const handleAddShoppingItem = (e: React.FormEvent) => {
+    const handleAddShoppingItem = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newItemName.trim()) return;
-        setShoppingList([{ id: crypto.randomUUID(), name: newItemName, isBought: false }, ...shoppingList]);
+        const id = crypto.randomUUID();
+        const newItem: ShoppingItem = { id, name: newItemName, isBought: false };
         setNewItemName('');
+        try {
+            await setDoc(doc(db, 'shopping', id), newItem);
+        } catch (e) { console.error(e); }
     };
 
-    const toggleShoppingItem = (id: string) => {
-        setShoppingList(prev => prev.map(item => item.id === id ? { ...item, isBought: !item.isBought } : item));
+    const toggleShoppingItem = async (id: string) => {
+        const item = shoppingList.find(i => i.id === id);
+        if (!item) return;
+        try {
+            await updateDoc(doc(db, 'shopping', id), { isBought: !item.isBought });
+        } catch (e) { console.error(e); }
     };
 
-    const removeShoppingItem = (id: string) => {
-        setShoppingList(prev => prev.filter(i => i.id !== id));
+    const removeShoppingItem = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'shopping', id));
+        } catch (e) { console.error(e); }
     };
 
     // Note handlers
-    const handleAddNote = (e: React.FormEvent) => {
+    const handleAddNote = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newNoteText.trim()) return;
         const randomColor = NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
-        setNotes([{ id: crypto.randomUUID(), text: newNoteText, color: randomColor, author: 'Ja' }, ...notes]);
+        const id = crypto.randomUUID();
+        const newNote: StickyNote = { id, text: newNoteText, color: randomColor, author: 'Ja' };
         setNewNoteText('');
+        try {
+            await setDoc(doc(db, 'notes', id), newNote);
+        } catch (e) { console.error(e); }
     };
 
-    const removeNote = (id: string) => {
-        setNotes(prev => prev.filter(n => n.id !== id));
+    const removeNote = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'notes', id));
+        } catch (e) { console.error(e); }
     };
 
     return (
@@ -117,16 +137,16 @@ export const Hub: React.FC = () => {
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            height: '180px',
+                            minHeight: '180px',
                             boxShadow: 'var(--shadow-md)'
                         }}
                     >
-                        <div>
+                        <div style={{ paddingBottom: '1rem' }}>
                             <span style={{ fontSize: '2rem' }}>📝</span>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.5rem 0' }}>Twoje zadania</h3>
                             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-main)', opacity: 0.7 }}>Dzisiaj masz {pendingChores.length} rzeczy do zrobienia</p>
                         </div>
-                        <div style={{ fontWeight: 900, fontSize: '1.5rem' }}>{pendingChores.length} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>pozostało</span></div>
+                        <div style={{ fontWeight: 900, fontSize: '1.5rem', alignSelf: 'flex-start' }}>{pendingChores.length} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>pozostało</span></div>
                     </motion.div>
 
                     {/* Events Summary Card */}
@@ -140,18 +160,18 @@ export const Hub: React.FC = () => {
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            height: '180px',
+                            minHeight: '180px',
                             boxShadow: 'var(--shadow-md)'
                         }}
                     >
-                        <div>
+                        <div style={{ paddingBottom: '1rem' }}>
                             <span style={{ fontSize: '2rem' }}>🗓️</span>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.5rem 0' }}>Wydarzenia</h3>
                             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-main)', opacity: 0.7 }}>
                                 {todayEvents.length > 0 ? `Masz ${todayEvents.length} wydarzeń dzisiaj` : 'Brak wydarzeń na dziś'}
                             </p>
                         </div>
-                        <div style={{ fontWeight: 900, fontSize: '1.5rem' }}>{todayEvents.length} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>dzisiaj</span></div>
+                        <div style={{ fontWeight: 900, fontSize: '1.5rem', alignSelf: 'flex-start' }}>{todayEvents.length} <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>dzisiaj</span></div>
                     </motion.div>
 
                     {/* Shop Promo Card */}
@@ -165,16 +185,16 @@ export const Hub: React.FC = () => {
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            height: '180px',
+                            minHeight: '180px',
                             boxShadow: 'var(--shadow-md)'
                         }}
                     >
-                        <div>
+                        <div style={{ paddingBottom: '1rem' }}>
                             <span style={{ fontSize: '2rem' }}>🎁</span>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.5rem 0' }}>Nowości w sklepie</h3>
                             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-main)', opacity: 0.7 }}>Sprawdź nowe nagrody!</p>
                         </div>
-                        <div style={{ fontWeight: 900, fontSize: '1rem', textTransform: 'uppercase' }}>Zobacz sklep →</div>
+                        <div style={{ fontWeight: 900, fontSize: '1rem', textTransform: 'uppercase', alignSelf: 'flex-start' }}>Zobacz sklep →</div>
                     </motion.div>
                 </div>
             </section>

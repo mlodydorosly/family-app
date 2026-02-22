@@ -21,7 +21,7 @@ export const Shop: React.FC = () => {
 
     const handlePurchase = (id: string, title: string, cost: number) => {
         if (!currentUser) return;
-        
+
         if (currentUser.points >= cost) {
             const success = purchaseReward(id);
             if (success) {
@@ -37,7 +37,7 @@ export const Shop: React.FC = () => {
             <header className="mb-6" style={{ marginTop: '1rem' }}>
                 <h1 className="text-3xl font-black" style={{ letterSpacing: '-1.5px' }}>Sklep Nagród</h1>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', fontWeight: 500 }}>Wymień monety na przyjemności</p>
-                
+
                 <div style={{
                     marginTop: '1.5rem',
                     padding: '1.25rem',
@@ -57,7 +57,7 @@ export const Shop: React.FC = () => {
             </header>
 
             {/* Search Bar */}
-            <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+            <div style={{ position: 'relative', marginBottom: '1.5rem', marginTop: '1.5rem' }}>
                 <input
                     type="text"
                     placeholder="Szukaj nagrody..."
@@ -104,10 +104,10 @@ export const Shop: React.FC = () => {
             </div>
 
             {/* Rewards Grid */}
-            <section style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
-                gap: '1.25rem' 
+            <section style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: '1.25rem'
             }}>
                 <AnimatePresence>
                     {filteredRewards.length === 0 ? (
@@ -134,8 +134,8 @@ export const Shop: React.FC = () => {
                                         position: 'relative'
                                     }}
                                 >
-                                    <div style={{ 
-                                        fontSize: '3.5rem', 
+                                    <div style={{
+                                        fontSize: '3.5rem',
                                         marginBottom: '1rem',
                                         width: '85px', height: '85px',
                                         backgroundColor: 'var(--color-background)',
@@ -147,7 +147,7 @@ export const Shop: React.FC = () => {
                                     <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.5rem', minHeight: '2.8rem', display: 'flex', alignItems: 'center' }}>
                                         {reward.title}
                                     </h3>
-                                    
+
                                     <button
                                         onClick={() => handlePurchase(reward.id, reward.title, reward.cost)}
                                         style={{
